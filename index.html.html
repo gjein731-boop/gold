@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>골드 리스크 관리기</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #27272a;
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-icon {
+      background: rgba(16,185,129,0.1);
+      border-radius: 10px;
+      padding: 8px;
+      display: flex;
+    }
+    .header-icon svg { color: #10b981; }
+    .header-title { font-size: 1.4rem; font-weight: 800; color: #f4f4f5; }
+    .header-sub { font-size: 0.75rem; color: #52525b; font-family: monospace; margin-top: 4px; }
+    .btn-reset {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px;
+      background: #18181b; border: 1px solid #3f3f46;
+      color: #d4d4d8; border-radius: 10px; cursor: pointer;
+      font-size: 0.85rem; font-weight: 600; transition: background 0.2s;
+    }
+    .btn-reset:hover { background: #27272a; }
+
+    /* Layout */
+    .layout { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; align-items: start; }
+    @media (max-width: 680px) { .layout { grid-template-columns: 1fr; } }
+
+    /* Card */
+    .card {
+      background: #0a0a0a;
+      border: 1px solid #27272a;
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .card-title {
+      font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #71717a;
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    /* Inputs */
+    .input-group { margin-bottom: 20px; }
+    .input-label {
+      display: block;
+      font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #71717a; font-family: monospace;
+      margin-bottom: 8px;
+    }
+    .input-label.green { color: rgba(16,185,129,0.7); }
+    .input-wrapper { position: relative; }
+    .input-field {
+      width: 100%;
+      background: rgba(24,24,27,0.5);
+      border: 1px solid #3f3f46;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 1.05rem;
+      color: #fff;
+      font-family: monospace;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-field.green-text { color: #10b981; }
+    .input-field::placeholder { color: #27272a; }
+    .input-field:focus { border-color: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.1); }
+    .divider { border: none; border-top: 1px solid rgba(39,39,42,0.5); margin: 20px 0; }
+
+    /* Output area */
+    .output { display: flex; flex-direction: column; gap: 16px; }
+    .empty-state {
+      border: 2px dashed #1c1c1e;
+      border-radius: 16px;
+      background: rgba(10,10,10,0.5);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 60px 24px;
+      gap: 16px;
+    }
+    .empty-icon {
+      background: #18181b; border-radius: 50%; padding: 16px;
+    }
+    .empty-title { font-size: 0.95rem; font-family: monospace; font-weight: 700; color: #71717a; }
+    .empty-sub { font-size: 0.8rem; color: #3f3f46; max-width: 220px; margin-top: 4px; }
+
+    /* Warning */
+    .warning {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex; align-items: flex-start; gap: 12px;
+      color: #f87171;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+    .warning-title { font-size: 0.7rem; font-weight: 800; font-family: monospace; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .warning-msg { font-size: 0.85rem; font-weight: 600; }
+
+    /* Metrics grid */
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 480px) { .metrics { grid-template-columns: 1fr 1fr; } }
+    .metric-card {
+      background: #0a0a0a;
+      border: 1px solid #27272a;
+      border-radius: 16px;
+      padding: 16px;
+      overflow: hidden;
+    }
+    .metric-label { font-size: 0.6rem; font-family: monospace; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #52525b; margin-bottom: 4px; }
+    .metric-value { font-size: 1.15rem; font-weight: 800; font-family: monospace; }
+    .color-green { color: #10b981; }
+    .color-red { color: #ef4444; }
+    .color-white { color: #fff; }
+
+    /* Entry table */
+    .table-card {
+      background: #0a0a0a; border: 1px solid #27272a; border-radius: 16px; overflow: hidden;
+    }
+    .table-header {
+      background: rgba(24,24,27,0.5);
+      border-bottom: 1px solid #27272a;
+      padding: 10px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .table-header-title { font-family: monospace; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #d4d4d8; }
+    .table-badge { background: #27272a; border-radius: 6px; padding: 3px 8px; font-size: 0.6rem; font-family: monospace; font-weight: 700; color: #a1a1aa; }
+    .table-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      padding: 10px 20px;
+      align-items: center;
+      border-bottom: 1px solid rgba(39,39,42,0.4);
+    }
+    .table-row:last-child { border-bottom: none; }
+    .table-row.gap-row { background: rgba(24,24,27,0.3); padding: 5px 20px; }
+    .table-row.e3-active { border-left: 4px solid #10b981; background: rgba(16,185,129,0.04); }
+    .table-row.e3-blocked { border-left: 4px solid rgba(127,29,29,0.4); background: rgba(239,68,68,0.04); opacity: 0.6; }
+    .table-row.blocked { opacity: 0.5; }
+    .row-label { font-size: 0.7rem; font-family: monospace; font-weight: 700; color: #71717a; }
+    .row-label.green { color: #10b981; }
+    .row-label.blocked-color { color: rgba(127,29,29,0.8); }
+    .row-value { text-align: right; font-family: monospace; font-size: 1rem; font-weight: 800; color: #fff; }
+    .row-value.green { color: #10b981; }
+    .row-value.blocked-color { color: #ef4444; }
+    .gap-badge {
+      font-size: 0.6rem; font-family: monospace; font-weight: 800; color: #52525b;
+      background: rgba(39,39,42,0.5); padding: 2px 8px; border-radius: 4px;
+      border: 1px solid rgba(63,63,70,0.4);
+    }
+
+    /* Final analysis */
+    .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 12px; }
+    .analysis-card {
+      background: #0a0a0a; border: 1px solid #27272a; border-radius: 16px;
+      padding: 16px; text-align: center; position: relative;
+    }
+    .analysis-label { font-size: 0.6rem; font-family: monospace; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+    .analysis-label.green { color: rgba(16,185,129,0.7); }
+    .analysis-label.red { color: rgba(239,68,68,0.7); }
+    .analysis-label.gray { color: #52525b; }
+    .analysis-value { font-size: 1.4rem; font-weight: 800; font-family: monospace; }
+    .analysis-sub { font-size: 0.55rem; font-family: monospace; color: #3f3f46; position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; }
+
+    /* SVG icons inline */
+    svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">
+        <svg style="color:#10b981" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+      </div>
+      <div>
+        <div class="header-title">골드 리스크 관리기</div>
+        <div class="header-sub">XAUUSD 구간 매매 시스템</div>
+      </div>
+    </div>
+    <button class="btn-reset" onclick="handleReset()">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>
+      입력 초기화
+    </button>
+  </div>
+
+  <!-- Layout -->
+  <div class="layout">
+    <!-- Inputs -->
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        설정
+      </div>
+
+      <div class="input-group">
+        <label class="input-label green">오늘 KTR (자동 저장)</label>
+        <div class="input-wrapper">
+          <input class="input-field green-text" id="tr" type="number" placeholder="0.00" oninput="onTrChange(this.value)" />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">내 시드 ($)</label>
+        <input class="input-field" id="seed" type="number" placeholder="예: 780" oninput="calculate()" />
+      </div>
+
+      <hr class="divider">
+
+      <div class="input-group">
+        <label class="input-label">1차 진입가</label>
+        <input class="input-field" id="entry1" type="number" placeholder="예: 3184" oninput="calculate()" />
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">2차 진입가 (전저점)</label>
+        <input class="input-field" id="entry2" type="number" placeholder="예: 3161" oninput="calculate()" />
+      </div>
+
+      <div class="input-group" style="margin-bottom:0">
+        <label class="input-label">전고점 (선택 사항)</label>
+        <input class="input-field" id="prevHigh" type="number" placeholder="목표가 계산용" oninput="calculate()" />
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="output" id="output">
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" style="width:40px;height:40px;opacity:0.3"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        </div>
+        <div>
+          <div class="empty-title">입력 대기 중</div>
+          <div class="empty-sub">시드, 1차 진입가, 2차 진입가를 입력하여 전략을 생성하세요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Load saved TR
+  window.addEventListener('load', () => {
+    const saved = localStorage.getItem('gold_risk_tr');
+    if (saved) {
+      document.getElementById('tr').value = saved;
+    }
+    calculate();
+  });
+
+  function onTrChange(val) {
+    if (val) localStorage.setItem('gold_risk_tr', val);
+    calculate();
+  }
+
+  function handleReset() {
+    document.getElementById('seed').value = '';
+    document.getElementById('entry1').value = '';
+    document.getElementById('entry2').value = '';
+    document.getElementById('prevHigh').value = '';
+    calculate();
+  }
+
+  function fmt(n) {
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function calculate() {
+    const seed = parseFloat(document.getElementById('seed').value);
+    const e1 = parseFloat(document.getElementById('entry1').value);
+    const e2 = parseFloat(document.getElementById('entry2').value);
+    const tr = parseFloat(document.getElementById('tr').value);
+    const prevHigh = parseFloat(document.getElementById('prevHigh').value);
+    const output = document.getElementById('output');
+
+    if (isNaN(seed) || isNaN(e1) || isNaN(e2)) {
+      output.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" style="width:40px;height:40px;opacity:0.3"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          </div>
+          <div>
+            <div class="empty-title">입력 대기 중</div>
+            <div class="empty-sub">시드, 1차 진입가, 2차 진입가를 입력하여 전략을 생성하세요.</div>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const maxLoss = seed * 0.10;
+    const gap = e1 - e2;
+    const e3 = e2 - (gap * 0.5);
+
+    let warning = null;
+    let finalE2 = e2, finalE3 = e3;
+    let avgPrice = 0, stopLoss = 0;
+
+    if ((e1 - e2) >= maxLoss) {
+      warning = "⚠️ 리스크 초과: 추가 진입 차단됨";
+      finalE2 = null; finalE3 = null;
+      stopLoss = e1 - maxLoss;
+      avgPrice = e1;
+    } else {
+      const lossAtE3 = (e1 - e3) + (e2 - e3);
+      if (lossAtE3 >= maxLoss) {
+        warning = "⚠️ 리스크 초과: 추가 진입 차단됨";
+        finalE3 = null;
+        stopLoss = (e1 + e2 - maxLoss) / 2;
+        avgPrice = (e1 + e2) / 2;
+      } else {
+        stopLoss = (e1 + e2 + e3 - maxLoss) / 3;
+        avgPrice = (e1 + e2 + e3) / 3;
+      }
+    }
+
+    const targetTR = !isNaN(tr) ? avgPrice + tr : null;
+    const gap12 = finalE2 !== null ? e1 - finalE2 : null;
+    const gap23 = (finalE2 !== null && finalE3 !== null) ? finalE2 - finalE3 : null;
+    const totalLots = finalE2 === null ? '0.01' : finalE3 === null ? '0.02' : '0.03';
+
+    const e3Class = finalE3 !== null ? 'e3-active' : 'e3-blocked';
+    const e3LabelClass = finalE3 !== null ? 'green' : 'blocked-color';
+    const e3ValueClass = finalE3 !== null ? 'green' : 'blocked-color';
+    const e3Value = finalE3 !== null ? fmt(finalE3) : '<span style="color:#ef4444;font-weight:900">진입 불가</span>';
+
+    output.innerHTML = `
+      ${warning ? `
+      <div class="warning">
+        <svg viewBox="0 0 24 24" style="width:20px;height:20px;flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <div>
+          <div class="warning-title">리스크 경고</div>
+          <div class="warning-msg">${warning}</div>
+        </div>
+      </div>` : ''}
+
+      <div class="metrics">
+        <div class="metric-card">
+          <div class="metric-label">오늘 KTR</div>
+          <div class="metric-value color-green">${isNaN(tr) ? '---' : tr}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">내 시드</div>
+          <div class="metric-value color-white">$${fmt(seed)}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">최대 손실 한도 (10%)</div>
+          <div class="metric-value color-red">-$${fmt(maxLoss)}</div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-header-title">진입 전략 (각 0.01랏)</span>
+          <span class="table-badge">총: ${totalLots} 랏</span>
+        </div>
+
+        <div class="table-row">
+          <span class="row-label">1차 진입가</span>
+          <span class="row-value">${fmt(e1)}</span>
+        </div>
+        <div class="table-row gap-row" style="display:flex;justify-content:flex-end">
+          <span class="gap-badge">GAP: ${gap12 !== null ? fmt(gap12) : '---'} pt</span>
+        </div>
+
+        <div class="table-row ${finalE2 === null ? 'blocked' : ''}">
+          <span class="row-label">2차 진입가 (전저점)</span>
+          <span class="row-value">${finalE2 !== null ? fmt(finalE2) : '<span style="color:#ef4444;font-weight:900">진입 불가</span>'}</span>
+        </div>
+        <div class="table-row gap-row" style="display:flex;justify-content:flex-end">
+          <span class="gap-badge">GAP: ${gap23 !== null ? fmt(gap23) : '---'} pt</span>
+        </div>
+
+        <div class="table-row ${e3Class}">
+          <span class="row-label ${e3LabelClass}">3차 진입가</span>
+          <span class="row-value ${e3ValueClass}">${e3Value}</span>
+        </div>
+      </div>
+
+      <div class="analysis-grid">
+        <div class="analysis-card">
+          <div class="analysis-label gray">평균 단가</div>
+          <div class="analysis-value color-white">${fmt(avgPrice)}</div>
+        </div>
+        <div class="analysis-card">
+          <div class="analysis-label green">1차 목표가 (AVG + 1TR)</div>
+          <div class="analysis-value color-green">${targetTR ? fmt(targetTR) : '<span style="color:#3f3f46">---</span>'}</div>
+        </div>
+        <div class="analysis-card">
+          <div class="analysis-label red">최종 손절가 (10%)</div>
+          <div class="analysis-value color-red">${fmt(stopLoss)}</div>
+          <div class="analysis-sub">시드 10% 손실 지점</div>
+        </div>
+        <div class="analysis-card">
+          <div class="analysis-label gray">2차 목표가 (전고점)</div>
+          <div class="analysis-value" style="color:#16a34a">${!isNaN(prevHigh) ? fmt(prevHigh) : '<span style="color:#27272a">---</span>'}</div>
+        </div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>
